@@ -140,12 +140,7 @@ sublive/
 
 ## Known limitations
 
-- **LTC decoding is experimental.** It has been tested against a 25 fps / 48 kHz test file and a live BlackHole input, but behaviour with other sources has not been fully verified. Check the signal meter and the timecode shown before relying on it for a show.
-- **YouTube caption overlap.** When cues are fired in very quick succession, YouTube may display parts of more than one cue at once. This is caused by how YouTube buffers incoming captions. Leaving a few seconds between cues avoids it.
+- **LTC decoding is experimental.** But it seems to work fine so far. Use something like blackhole to get ltc output from DAW back to sublive if they run on the same device. 
+- **YouTube caption overlap.** When cues are fired in very quick succession, YouTube may display parts of more than one cue at once. This is caused by how YouTube buffers incoming captions (3 secs/cue ). Leaving a few seconds between cues avoids it.
 - Each text field is limited to 58 characters.
-- State is held in server memory. Restarting the container clears the live cue list, so save your project file before shutting down.
-- There is no authentication. Run it on a trusted network only.
-
-## License
-
-Add your license here.
+- Restarting the container clears the live cue list, so save your project file before shutting down.
