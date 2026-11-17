@@ -2,7 +2,7 @@
 
 Multilingual live subtitle operator. Prepare cues in up to three languages, fire them from a browser, and send them to separate display screens, YouTube Live captions, and an SRT recording, all in sync.
 
-Runs in Docker. The operator UI and display screens are plain web pages, so any modern browser works (developed and tested mainly with Safari on macOS).
+Runs in Docker. The operator UI and display screens are plain web pages.
 
 ## Features
 
