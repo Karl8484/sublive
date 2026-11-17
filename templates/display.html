@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>SubLive Display</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+#stage{width:100vw;height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:5vw;transition:opacity .3s ease}
+#stage.blackout{opacity:0}
+#txt{text-align:center;line-height:1.25;word-break:break-word;hyphens:auto;
+  max-width:94vw;font-size:52px;font-weight:700;font-style:normal;
+  color:#ffffff;font-family:sans-serif}
+#stage-cmb{display:none;width:100vw;height:100vh;flex-direction:column;
+  transition:opacity .3s ease}
+#stage-cmb.active{display:flex}
+#stage-cmb.blackout{opacity:0}
+.chalf{flex:1;display:flex;align-items:center;justify-content:center;
+  padding:3vw 5vw;border-bottom:1px solid #0a0a0a}
+.chalf:last-child{border-bottom:none}
+.ctxt{text-align:center;line-height:1.25;word-break:break-word;hyphens:auto;
+  max-width:94%;font-size:40px;font-weight:700;color:#ffffff;font-family:sans-serif}
+</style>
+</head>
+<body>
+<div id="stage"><div id="txt"></div></div>
+<div id="stage-cmb">
+  <div class="chalf"><div class="ctxt" id="txt-top"></div></div>
+  <div class="chalf"><div class="ctxt" id="txt-bot"></div></div>
+</div>
+<script>
+const LANG=__LANG__;
+const stage=document.getElementById("stage");
+const stageCmb=document.getElementById("stage-cmb");
+const txt=document.getElementById("txt");
+const txtTop=document.getElementById("txt-top");
+const txtBot=document.getElementById("txt-bot");
+let combined=false, currentTexts=["","",""], ws;
+
+function connect(){
+  ws=new WebSocket(`ws://${location.host}/ws/display${LANG}`);
+  ws.onclose=()=>setTimeout(connect,2000);
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(m.type==="INIT"){
+      combined=m.state?.combine_screens&&LANG===1;
+      updateMode(); applyFmtFromState(m.state);
+      const idx=m.state?.current_index;
+      if(idx>=0&&m.state?.cues){
+        const fl=flatten(m.state.cues);
+        if(fl[idx]){currentTexts=fl[idx].texts||["","",""];if(!m.state.blackout)setTexts(currentTexts);}
+      }
+    }
+    if(m.type==="TEXT"){
+      stage.classList.toggle("blackout",m.blackout);
+      stageCmb.classList.toggle("blackout",m.blackout);
+      if(!m.blackout){currentTexts=m.texts||["","",""];setTexts(currentTexts);}
+    }
+    if(m.type==="BLACKOUT"){
+      stage.classList.toggle("blackout",m.on);
+      stageCmb.classList.toggle("blackout",m.on);
+    }
+    if(m.type==="FORMAT"){
+      const li=parseInt(m.lang);
+      if(combined&&LANG===1){if(li===1)applyFmt(m.fmt,txtTop);if(li===2)applyFmt(m.fmt,txtBot);}
+      else if(li===LANG) applyFmt(m.fmt,txt);
+    }
+    if(m.type==="COMBINE"||m.type==="STATE_PATCH"){
+      const on=m.on!==undefined?m.on:m.data?.combine_screens;
+      combined=on&&LANG===1; updateMode();
+    }
+  };
+}
+
+function setTexts(texts){
+  if(combined&&LANG===1){setT(txtTop,texts[1]||"");setT(txtBot,texts[2]||"");}
+  else setT(txt,texts[LANG]||"");
+}
+function setT(el,t){if(el.textContent!==t)el.textContent=t;}
+function updateMode(){
+  if(combined&&LANG===1){stage.style.display="none";stageCmb.classList.add("active");setTexts(currentTexts);}
+  else{stage.style.display="";stageCmb.classList.remove("active");setTexts(currentTexts);}
+}
+function applyFmt(f,el){
+  if(!f||!el)return;
+  if(f.size)  el.style.fontSize  =f.size+"px";
+  if(f.color) el.style.color     =f.color;
+  if(f.font)  el.style.fontFamily=f.font;
+  el.style.fontWeight=f.bold  ?"700":"400";
+  el.style.fontStyle =f.italic?"italic":"normal";
+}
+function applyFmtFromState(s){
+  if(!s?.lang_format)return;
+  if(combined&&LANG===1){applyFmt(s.lang_format["1"],txtTop);applyFmt(s.lang_format["2"],txtBot);}
+  else applyFmt(s.lang_format[String(LANG)],txt);
+}
+function flatten(items){
+  let r=[];
+  for(const it of items){
+    if(it.type==="group"){if(!it.collapsed)r=r.concat(flatten(it.children||[]));}
+    else if(!it.disabled)r.push(it);
+  }
+  return r;
+}
+connect();
+</script>
+</body>
+</html>

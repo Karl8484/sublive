@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  sublive:
+    build: .
+    container_name: sublive
+    ports:
+      - "8000:8000"
+      - "53002:53002/udp"
+    volumes:
+      - ./projects:/app/projects
+      - ./exports:/app/exports
+    restart: unless-stopped
